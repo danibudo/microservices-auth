@@ -11,6 +11,7 @@ import {
   findActiveTokenByHash,
   findActiveTokenByHashForUpdate,
   insertToken,
+  revokeAllUserTokens,
   revokeTokenById,
   revokeTokenByHash,
 } from '../db/queries/tokens';
@@ -150,6 +151,27 @@ export async function createFromEvent(data: {
   await withTransaction(async (client) => {
     await insertCredential(data.userId, data.email, data.role, client);
     await insertToken(data.userId, 'invite', hash, expiresAt, client);
+  });
+
+  return { inviteToken: raw, expiresAt };
+}
+
+export async function resendInviteFromEvent(
+  userId: string,
+): Promise<{ inviteToken: string; expiresAt: Date }> {
+  const { raw, hash } = generateSecureToken();
+  const expiresAt = secondsFromNow(config.INVITE_TOKEN_EXPIRES_IN);
+
+  await withTransaction(async (client) => {
+    const credential = await findCredentialByUserId(userId, client);
+
+    if (!credential) {
+      throw new AppError(404, `No credential found for user ${userId}.`);
+    }
+
+    // Revoke any outstanding invite tokens before issuing a new one
+    await revokeAllUserTokens(userId, 'invite', client);
+    await insertToken(userId, 'invite', hash, expiresAt, client);
   });
 
   return { inviteToken: raw, expiresAt };
