@@ -2,14 +2,13 @@
   "name": "auth-service",
   "version": "1.0.0",
   "description": "Authentication microservice for the Library Management System",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --exit-child src/index.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
-    "migrate": "node -e \"require('node-flywaydb').migrate({configFile: 'flyway.conf'})\"",
-    "migrate:info": "node -e \"require('node-flywaydb').info({configFile: 'flyway.conf'})\"",
-    "migrate:validate": "node -e \"require('node-flywaydb').validate({configFile: 'flyway.conf'})\"",
+    "migrate": "ts-node src/db/migrate.ts",
+    "migrate:prod": "node dist/db/migrate.js",
     "lint": "tsc --noEmit",
     "test": "jest --runInBand",
     "clean": "rm -rf dist"
@@ -20,7 +19,6 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "node-flywaydb": "^3.0.7",
     "pg": "^8.12.0",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
