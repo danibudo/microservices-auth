@@ -1,10 +1,13 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp, { Channel } from 'amqplib';
 import { config } from '../config/env';
+
+// Use the actual return type of amqp.connect() to avoid the Connection/ChannelModel mismatch
+type AmqpConnection = Awaited<ReturnType<typeof amqp.connect>>;
 
 const BASE_RETRY_DELAY_MS = 1_000;
 const MAX_RETRY_DELAY_MS = 30_000;
 
-let connection: Connection | null = null;
+let connection: AmqpConnection | null = null;
 let channel: Channel | null = null;
 
 export async function initConnection(
@@ -18,20 +21,24 @@ async function connectWithRetry(
   attempt: number,
 ): Promise<void> {
   try {
-    connection = await amqp.connect(config.RABBITMQ_URL);
-    channel = await connection.createChannel();
-    await channel.prefetch(config.RABBITMQ_PREFETCH);
+    // Use local variables first so TypeScript can narrow the type for subsequent calls
+    const conn = await amqp.connect(config.RABBITMQ_URL);
+    const chan = await conn.createChannel();
+    await chan.prefetch(config.RABBITMQ_PREFETCH);
 
-    connection.on('error', (err: Error) => {
+    conn.on('error', (err: Error) => {
       console.error('RabbitMQ connection error:', err.message);
     });
 
-    connection.on('close', () => {
+    conn.on('close', () => {
       console.warn('RabbitMQ connection closed, reconnecting...');
       channel = null;
       connection = null;
       void connectWithRetry(onConnected, 0);
     });
+
+    connection = conn;
+    channel = chan;
 
     console.log('Connected to RabbitMQ');
     await onConnected();
