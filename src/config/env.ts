@@ -12,7 +12,7 @@ const envSchema = z.object({
   DB_PASSWORD: z.string().min(1),
   DB_POOL_MIN: z.coerce.number().default(2),
   DB_POOL_MAX: z.coerce.number().default(10),
-  DB_SSL: z.coerce.boolean().default(false),
+  DB_SSL: z.preprocess((v) => v === 'true' || v === true, z.boolean()).default(false),
 
   JWT_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES_IN: z.coerce.number().default(900),
