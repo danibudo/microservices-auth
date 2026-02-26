@@ -156,6 +156,31 @@ export async function createFromEvent(data: {
   return { inviteToken: raw, expiresAt };
 }
 
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await withTransaction(async (client) => {
+    const credential = await findCredentialByUserId(userId, client);
+
+    if (!credential || !credential.password_hash) {
+      throw new AppError(400, 'Account is not yet activated.');
+    }
+
+    const valid = await comparePassword(currentPassword, credential.password_hash);
+    if (!valid) {
+      throw new AppError(401, 'Current password is incorrect.');
+    }
+
+    const newHash = await hashPassword(newPassword);
+    await setCredentialPasswordHash(userId, newHash, client);
+
+    // Revoke all refresh tokens to invalidate all other active sessions
+    await revokeAllUserTokens(userId, 'refresh', client);
+  });
+}
+
 export async function resendInviteFromEvent(
   userId: string,
 ): Promise<{ inviteToken: string; expiresAt: Date }> {
