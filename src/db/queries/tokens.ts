@@ -20,21 +20,27 @@ export async function insertToken(
   return result.rows[0]!;
 }
 
+async function findActiveTokenByHashInternal(
+  tokenHash: string,
+  type: TokenType,
+  client: PoolClient | undefined,
+  forUpdate: boolean,
+): Promise<Token | null> {
+  const sql = `SELECT * FROM tokens
+     WHERE token_hash = $1
+       AND type = $2
+       AND revoked_at IS NULL
+       AND expires_at > NOW()${forUpdate ? '\n     FOR UPDATE' : ''}`;
+  const result = await query<Token>(sql, [tokenHash, type], client);
+  return result.rows[0] ?? null;
+}
+
 export async function findActiveTokenByHash(
   tokenHash: string,
   type: TokenType,
   client?: PoolClient,
 ): Promise<Token | null> {
-  const result = await query<Token>(
-    `SELECT * FROM tokens
-     WHERE token_hash = $1
-       AND type = $2
-       AND revoked_at IS NULL
-       AND expires_at > NOW()`,
-    [tokenHash, type],
-    client,
-  );
-  return result.rows[0] ?? null;
+  return findActiveTokenByHashInternal(tokenHash, type, client, false);
 }
 
 export async function findActiveTokenByHashForUpdate(
@@ -42,17 +48,7 @@ export async function findActiveTokenByHashForUpdate(
   type: TokenType,
   client: PoolClient,
 ): Promise<Token | null> {
-  const result = await query<Token>(
-    `SELECT * FROM tokens
-     WHERE token_hash = $1
-       AND type = $2
-       AND revoked_at IS NULL
-       AND expires_at > NOW()
-     FOR UPDATE`,
-    [tokenHash, type],
-    client,
-  );
-  return result.rows[0] ?? null;
+  return findActiveTokenByHashInternal(tokenHash, type, client, true);
 }
 
 export async function revokeTokenById(
