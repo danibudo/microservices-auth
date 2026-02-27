@@ -1,7 +1,6 @@
 import { Channel, ConsumeMessage } from 'amqplib';
 import { updateRoleFromEvent } from '../../services/credentialService';
 import { Role } from '../../types/domain';
-import { MessageEnvelope } from '../types';
 import { parseEnvelope } from '../utils';
 
 interface UserRoleUpdatedData {

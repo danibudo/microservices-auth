@@ -1,6 +1,5 @@
 import { Channel, ConsumeMessage } from 'amqplib';
 import { deleteFromEvent } from '../../services/credentialService';
-import { MessageEnvelope } from '../types';
 import { parseEnvelope } from '../utils';
 
 interface UserDeletedData {
