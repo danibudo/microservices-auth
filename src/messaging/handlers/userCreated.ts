@@ -2,8 +2,8 @@ import { Channel, ConsumeMessage } from 'amqplib';
 import { createFromEvent } from '../../services/credentialService';
 import { Role } from '../../types/domain';
 import { MessageEnvelope } from '../types';
-
-const AUTH_SERVICE_EXCHANGE = 'auth-service.events';
+import { AUTH_SERVICE_EXCHANGE } from '../consumer';
+import { parseEnvelope } from '../utils';
 
 interface UserCreatedData {
   user_id: string;
@@ -15,19 +15,21 @@ export function handleUserCreated(channel: Channel) {
   return async (msg: ConsumeMessage | null): Promise<void> => {
     if (!msg) return;
 
-    let envelope: MessageEnvelope<UserCreatedData>;
-    try {
-      envelope = JSON.parse(msg.content.toString()) as MessageEnvelope<UserCreatedData>;
-    } catch {
-      console.error('user.created: failed to parse message, sending to DLQ');
-      channel.nack(msg, false, false);
-      return;
-    }
+    const envelope = parseEnvelope<UserCreatedData>(
+      msg,
+      channel,
+      'user.created',
+    );
+    if (!envelope) return;
 
     try {
       const { user_id, email, role } = envelope.data;
-      const { inviteToken, expiresAt } = await createFromEvent({ userId: user_id, email, role });
-
+      const { inviteToken, expiresAt } = await createFromEvent({
+        userId: user_id,
+        email,
+        role,
+      });
+      // Publish to the authServiceExchange - the consumer will be the notification service that will send the invite mail to the user
       channel.publish(
         AUTH_SERVICE_EXCHANGE,
         'auth.invite_token_generated',

@@ -1,6 +1,7 @@
 import { Channel, ConsumeMessage } from 'amqplib';
 import { deleteFromEvent } from '../../services/credentialService';
 import { MessageEnvelope } from '../types';
+import { parseEnvelope } from '../utils';
 
 interface UserDeletedData {
   user_id: string;
@@ -10,14 +11,12 @@ export function handleUserDeleted(channel: Channel) {
   return async (msg: ConsumeMessage | null): Promise<void> => {
     if (!msg) return;
 
-    let envelope: MessageEnvelope<UserDeletedData>;
-    try {
-      envelope = JSON.parse(msg.content.toString()) as MessageEnvelope<UserDeletedData>;
-    } catch {
-      console.error('user.deleted: failed to parse message, sending to DLQ');
-      channel.nack(msg, false, false);
-      return;
-    }
+    const envelope = parseEnvelope<UserDeletedData>(
+      msg,
+      channel,
+      'user.deleted',
+    );
+    if (!envelope) return;
 
     try {
       const { user_id } = envelope.data;

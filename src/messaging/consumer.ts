@@ -5,7 +5,7 @@ import { handleUserDeleted } from './handlers/userDeleted';
 import { handleUserInviteResent } from './handlers/userInviteResent';
 
 const USER_SERVICE_EXCHANGE = 'user-service.events';
-const AUTH_SERVICE_EXCHANGE = 'auth-service.events';
+export const AUTH_SERVICE_EXCHANGE = 'auth-service.events';
 const DLX = 'dlx.auth-service';
 
 const QUEUES = {
