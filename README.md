@@ -1,3 +1,4 @@
+> Note: this README.md file has been generated with Claude Code.
 # auth-service
 
 Authentication microservice for the **Library Management System** — a portfolio project demonstrating a production-style microservice architecture across multiple languages and frameworks.
