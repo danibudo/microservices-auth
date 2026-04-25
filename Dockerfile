@@ -11,8 +11,10 @@ COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-# Reinstall production-only dependencies
-RUN npm ci --omit=dev --ignore-scripts
+# Reinstall production-only dependencies and compile native modules
+RUN apk add --no-cache python3 make g++ && \
+    npm ci --omit=dev --ignore-scripts && \
+    npm rebuild bcrypt --build-from-source
 
 # ─── Stage 2: Runtime ────────────────────────────────────────────────────────
 FROM node:20-alpine AS runtime
